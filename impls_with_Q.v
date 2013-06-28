@@ -25,25 +25,22 @@ Qmake
     y = z - t
 **)
 
+Definition to_pos (z:Z) : positive :=
+  match z with
+    | Zpos p => p
+    | _ => 1%positive
+  end.
+
+Definition Zsqrt_plain_pos (p : positive) : positive :=
+to_pos (Zsqrt_plain (Zpos p)).
+
 
 (** The definition of 'w' has been refactored to facilitate
-    using 'Qmake'.  The problem is that (Qden z) has type
-    'positive' while it needs to have type 'Z', in order to
-    take the square root of it.  Taking 'Zpos: positive -> Z'
-    works, but then the whole sqrt term has type 'Z' when it
-    is expected to have type 'positive'. **)
-
-(**
+    using 'Qmake'. **)
 Definition W (z : Q) : Q :=
-Qmake
-  (Qmake (Zsqrt_plain (8 * (Qnum z) + (Zpos (Qden z)))) (Zsqrt_plain (Qden z))) - 1
-  2.
-**)
-
-
-(** this is a stand-in function with the correct types: **)
-Definition W (z : Q) : Q :=
-1.
+ let x := (Zsqrt_plain (8 * (Qnum z) + (Zpos (Qden z)))) in
+ let y := (Zsqrt_plain_pos (Qden z)) in
+ Qmake (x - (Zpos y)) (2 * y).
 
 
 (** The definition of 't' has been refactored to facilitate
@@ -53,24 +50,55 @@ Definition T (w : Q) : Q :=
   let b := (Qden w) in
 Qmake (a*a + a* (Zpos b)) (2 * b * b).
 
+Definition ZofQ (x : Q) : option Z :=
+  let (q,r) := Zdiv_eucl (Qnum x) (Zpos (Qden x)) in
+  match r with
+  | Z0 => Some q
+  | Zpos r' => None
+  | Zneg r' => None
+  end.
 
-(** This expression has type (Q * Q) when it is expected to
-    have type (Z * Z).  The types of the functions guarantee
-    that the results are at least rationals.  It can be proven
-    that the results are in fact naturals (Z), but I'm not sure
-    how to incporate that fact into the types.  **)
+Lemma ZofQ_even :
+ forall q,
+  False -> (* what to put here? *)
+  { z | ZofQ q = Some z }.
+Proof.
+Admitted.
 
-(**
-Definition decode (z : Q) : (Z * Z) :=
-((W z) - (z - T (W z)), (z - (T (W z)))).
-**)
+Definition option_bind {A B:Type} (f : A -> option B) (o : option A) :=
+match o with
+| Some a => f a
+| None => None
+end.
 
-(** This is a filler function with the right types **)
-Definition decode (z : Q) : (Z * Z) :=
-(Z0, Z0).
+Definition mdecode (z : Q) : option (Z * Z) :=
+option_bind (fun lhs =>
+ option_bind (fun rhs => Some (lhs, rhs))
+ (ZofQ (z - (T (W z)))))
+ (ZofQ ((W z) - (z - T (W z)))).
+
+Theorem mdecode_some :
+ forall z,
+  { zz | mdecode z = Some zz }.
+Proof.
+Admitted.
+
+Definition decode z :=
+match mdecode_some z with
+| exist zz _ => zz
+end.
 
 Theorem decode_encode : forall x y ,
     decode (encode (x, y)) = (x, y).
+Proof.
+ intros x y.
+ unfold decode.
+ remember (encode (x, y)) as exy.
+ destruct (mdecode_some exy) as [[ax ay] P].
+
+Admitted.
 
 Theorem encode_decode : forall z ,
     encode (decode z) = z.
+Proof.
+Admitted.

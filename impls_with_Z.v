@@ -19,8 +19,8 @@ Definition encode (k : (nat * nat)) : nat :=
 
 (** 
     decode(z):
-        w = (sqrt(8z + 1) - 1) / 2
-        t = (w^2 + w) / 2
+        w = floorQ2Z( (sqrt(8z + 1) - 1) / 2 )
+        t = (w^2 + w) /2
         y = z - t
         x = w - y
         return <x, y>
