@@ -12,7 +12,6 @@ Qmake
   (((fst k) + (snd k)) * ((fst k) + (snd k) + 1) + 2 * (snd k))
     2.
 
-
 (** 
     decode(z):
         w = (sqrt(8z + 1) - 1) / 2
@@ -34,17 +33,11 @@ Definition to_pos (z:Z) : positive :=
 Definition Zsqrt_plain_pos (p : positive) : positive :=
 to_pos (Zsqrt_plain (Zpos p)).
 
-
-(** The definition of 'w' has been refactored to facilitate
-    using 'Qmake'. **)
 Definition W (z : Q) : Q :=
  let x := (Zsqrt_plain (8 * (Qnum z) + (Zpos (Qden z)))) in
  let y := (Zsqrt_plain_pos (Qden z)) in
  Qmake (x - (Zpos y)) (2 * y).
 
-
-(** The definition of 't' has been refactored to facilitate
-    using 'Qmake'. **)
 Definition T (w : Q) : Q :=
   let a := (Qnum w) in
   let b := (Qden w) in
@@ -58,12 +51,6 @@ Definition ZofQ (x : Q) : option Z :=
   | Zneg r' => None
   end.
 
-Lemma ZofQ_even :
- forall q,
-  False -> (* what to put here? *)
-  { z | ZofQ q = Some z }.
-Proof.
-Admitted.
 
 Definition option_bind {A B:Type} (f : A -> option B) (o : option A) :=
 match o with
@@ -81,6 +68,7 @@ Theorem mdecode_some :
  forall z,
   { zz | mdecode z = Some zz }.
 Proof.
+  intros.  
 Admitted.
 
 Definition decode z :=
