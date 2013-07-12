@@ -8,6 +8,8 @@ Require Import Zsqrt.
 Require Import R_Ifp.
 Require Import Even.
 
+Open Scope Z_scope.
+
 
 (** 
     encode(k1, k2) = (k1 + k2) * (k1 + k2 + 1) / 2 + k2  
@@ -16,9 +18,8 @@ Require Import Even.
 Definition encode (k : (Z * Z)) : Z :=
   let x := fst k in
   let y := snd k in
-  Zplus 
-    (Zdiv2 (x + y) * (x + y + 1)) 
-     y.
+  (Zdiv2 (x + y) * (x + y + 1)) 
+ + y.
 
 (** 
     decode(z):
@@ -54,27 +55,87 @@ Z0.
 Definition decode (z:Z) : (Z * Z) :=
   let w := Int_part (Result z) in
   let t := T_Z w in
-  let y := Zminus z t in
-  let x := Zminus w y in
+  let y := z - t in
+  let x := w - y in
   (x, y).
 
 Definition Result_Z (t : Z) : Z :=
-  Zdiv2 (Zminus (Zsqrt_plain (Zplus (Zmult 8 t) 1)) 1).
+  Zdiv2 ((Zsqrt_plain (8 * t + 1)) 
+      -   1).
 
 (* w = quadratic t  *)
 
 Definition w_Result_Z (w t : Z) : Prop :=
     w = Result_Z t.
 
+Lemma consec_mult__even : forall (w : Z),
+(Zeven (w * (w + 1))).
+Proof.
+intro w.
+Admitted.
+
+Lemma refactor_sqr_term : forall w,
+(4 * (w * (w + 1)) + 1) = (2 * w + 1) * (2 * w + 1).
+Proof.
+intro w. ring.
+Qed.
+
+Lemma plus_minus_assoc : forall n m p,
+n + m - p = n + (m - p).
+Proof.
+intros. ring.
+Qed.
+
+Lemma Zdiv2_Zmult2 : forall w,
+w = Zdiv2 (2 * w).
+Proof.
+intro w. induction w; reflexivity.
+Qed.
+
+Lemma sqr_term_positive : forall w,
+w >= 0 ->
+0 <= 2 * w + 1.
+Proof.
+intros w w_pos.
+Admitted.
+
 Theorem w_Result_Z_int : forall w t,
-   t = Zdiv2 (Zmult w (Zplus w 1)) ->
+  w >= 0 ->
+  t = Zdiv2 (w * (w + 1)) ->
   w_Result_Z w t.
 Proof.
-intros. subst. unfold w_Result_Z. unfold Result_Z.
-assert (Zeven (w * (w + 1))). admit.
-apply Zeven_div2 in H.
-(* factor the 8 into 4 * 2 then rewrite <- H *)
-Admitted.
+intros w t w_positive t_def. subst. 
+unfold w_Result_Z. unfold Result_Z.
+
+assert (
+        Zdiv2 (Zsqrt_plain (8 * Zdiv2 (w * (w + 1)) + 1) - 1) =
+        Zdiv2 (Zsqrt_plain (4*2*Zdiv2 (w * (w + 1)) + 1) - 1)).
+reflexivity.
+rewrite -> H. clear H.
+
+
+rewrite <- Zmult_assoc.
+rewrite <- Zeven_div2.
+
+rewrite refactor_sqr_term.
+remember (2 * w + 1) as sqr_term.
+
+rewrite Zsqrt_square_id.
+
+rewrite Heqsqr_term.
+
+rewrite plus_minus_assoc.
+rewrite (Zminus_diag 1).
+rewrite Zplus_0_r.
+
+apply Zdiv2_Zmult2.
+
+rewrite Heqsqr_term.
+apply sqr_term_positive. exact w_positive.
+
+apply consec_mult__even.
+Qed.
+
 
 (* t <= z < t + w + 1  ->
    w <= Result z < w + 1  *)
@@ -105,3 +166,5 @@ Theorem encode_decode : forall z ,
     encode (decode z) = z.
 Proof.
 Admitted.
+
+Close Scope Z_scope.
